@@ -1,0 +1,17 @@
+{
+  "name": "Partner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "partner.js",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "prompt-sync": "^4.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
