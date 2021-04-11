@@ -1,3 +1,3 @@
 @echo off
-node partner %1
+node server
 pause

@@ -1,15 +1,22 @@
 {
-  "name": "Partner",
+  "name": "partner",
   "version": "1.0.0",
   "description": "",
   "main": "partner.js",
+  "type": "module",
   "dependencies": {
     "axios": "^0.21.1",
-    "prompt-sync": "^4.2.0"
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-http-proxy": "^1.6.2",
+    "open": "^8.0.5",
+    "prompt-sync": "^4.2.0",
+    "soap": "^0.37.0",
+    "xml": "^1.0.1"
   },
-  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./src/server",
+    "cli": "node ./src/cli"
   },
   "keywords": [],
   "author": "",
