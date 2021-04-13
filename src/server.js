@@ -34,8 +34,7 @@ const tryAsyncMethod = async (res, method) => {
 	} catch (error) {
 		console.log(error);
 
-        res.status(500);
-        res.end();
+        res.status(500).json({...error, message: error.message});
 	}
 };
 

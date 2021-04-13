@@ -42,7 +42,10 @@ export const login = (email, password) => {
         .then(([loginResponse]) => {
             const { Msisdn: userId, Token: token, responseStatus } = loginResponse[`${ACTION_NAME}Result`];
             if (responseStatus.status === 'ERROR') {
-                return Promise.reject({ userId, code: responseStatus.statusCode, message: responseStatus.statusMessage });
+                const error = new Error('Login Error');
+                error.additionalData = { userId, code: responseStatus.statusCode, message: responseStatus.statusMessage }; 
+
+                throw error;
             }
 
             return { userId, token };
@@ -109,5 +112,5 @@ export const createSession = (channelId, {userId, token}) => {
             dashUrl: response.data.Session.Playlist.Channel.Value,
             drm
         }))
-        .catch(error => Promise.reject(error.response.data.Error.Message));
+        .catch(error => Promise.reject(new Error(error.response.data.Error.Message)));
 };

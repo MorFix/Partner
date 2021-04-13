@@ -9,6 +9,7 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-http-proxy": "^1.6.2",
+    "nodemon": "^2.0.7",
     "open": "^8.0.5",
     "prompt-sync": "^4.2.0",
     "soap": "^0.37.0",
@@ -16,6 +17,7 @@
   },
   "scripts": {
     "start": "node ./src/server",
+    "dev": "nodemon ./src/server",
     "cli": "node ./src/cli"
   },
   "keywords": [],
