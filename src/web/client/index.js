@@ -1,10 +1,44 @@
+const addQuery = (url, payload) => {
+    Object.keys(payload)
+        .filter(key => !url.searchParams.has(key))
+        .forEach(key => {
+            url.searchParams.append(key, payload[key]);
+        });
+};
+
+const getPathAndQuery = ({pathname, search}) => pathname + search; 
+
+const modifyRequestURL = (url, dashUrl) => {
+    const requestUrl = new URL(url, window.origin);
+    const parsedDash = new URL(dashUrl);
+    const query = { proxyhost: requestUrl.origin };
+
+    if (url === getPathAndQuery(parsedDash)) {
+        query.proxyhost = parsedDash.origin;
+        query.forceProxy = true;
+    }
+
+    addQuery(requestUrl, query);
+
+    return requestUrl.toString();
+};
+
 const loadStream = ({dashUrl, drm}) => {
+    const parsedDrm = new URL(drm);
+
+    addQuery(parsedDrm, { proxyhost: parsedDrm.origin, forceProxy: true });
+    
     const player = window.dashjs.MediaPlayer().create();
-    const protection = {"com.widevine.alpha": {serverURL: drm}};
+    const protection = {"com.widevine.alpha": {serverURL: getPathAndQuery(parsedDrm)}};
 
     player.setProtectionData(protection);
 
-    player.initialize(document.querySelector("#videoPlayer"), dashUrl, true);    
+    player.extend('RequestModifier', () => ({
+        modifyRequestHeader: xhr => xhr,
+        modifyRequestURL: url => modifyRequestURL(url, dashUrl)
+    }));
+
+    player.initialize(document.querySelector("#videoPlayer"), getPathAndQuery(new URL(dashUrl)), true);    
 };
 
 const getUser = () => {
@@ -45,6 +79,8 @@ const fetchWithUser = (url, options = {}) => {
             alert(err.message);
 
             console.log(err);
+
+            return Promise.reject(err);
         });
 }; 
 

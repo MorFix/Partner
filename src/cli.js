@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import {login, getChannels, createSession} from './partner.js';
+import {login, getChannels, createSession} from './lib/tv-partner.js';
 import promptSync from 'prompt-sync';
 
 dotenv.config();
@@ -40,7 +40,7 @@ const main = async () => {
 		console.log('Paste HERE:\nhttps://bitmovin.com/demos/drm\n');
 		
 		console.log(`DASH Manifest: \n${dashUrl.replace('http', 'https')}\n`);
-		console.log(`DRM License Server: \nhttps://sno.partner.co.il${drm}`);
+		console.log(`DRM License Server: \n${drm}`);
 	} catch (error) {
 		console.log(error);
 	}
