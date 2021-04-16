@@ -1,4 +1,9 @@
-let currentPlayer;
+window.videojs.Html5DashJS.hook('beforeinitialize', (videoJsPlayer, dashPlayer) => {
+    dashPlayer.extend('RequestModifier', () => ({
+        modifyRequestHeader: xhr => xhr,
+        modifyRequestURL: url => modifyRequestURL(url, videoJsPlayer.dashUrl)
+    }));
+});
 
 const addQuery = (url, payload) => {
     Object.keys(payload)
@@ -26,23 +31,23 @@ const modifyRequestURL = (url, dashUrl) => {
 };
 
 const loadStream = ({dashUrl, drm}) => {
-    currentPlayer?.reset();
-
     const parsedDrm = new URL(drm);
 
     addQuery(parsedDrm, { proxyhost: parsedDrm.origin, forceProxy: true });
-    
-    const player = currentPlayer = window.dashjs.MediaPlayer().create();
-    const protection = {"com.widevine.alpha": {serverURL: getPathAndQuery(parsedDrm)}};
 
-    player.setProtectionData(protection);
+    const player = window.videojs('videoPlayer');
 
-    player.extend('RequestModifier', () => ({
-        modifyRequestHeader: xhr => xhr,
-        modifyRequestURL: url => modifyRequestURL(url, dashUrl)
-    }));
+    player.ready(() => {
+        player.dashUrl = dashUrl;
 
-    player.initialize(document.querySelector("#videoPlayer"), getPathAndQuery(new URL(dashUrl)), true);    
+        player.src({
+            src: getPathAndQuery(new URL(dashUrl)),
+            type: 'application/dash+xml',
+            keySystemOptions: [{name: 'com.widevine.alpha', options: {serverURL: getPathAndQuery(parsedDrm)}}]
+        });
+
+        player.play();
+    });
 };
 
 const getUser = () => {

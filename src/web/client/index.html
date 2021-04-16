@@ -3,10 +3,12 @@
 
 <head>
     <title>Partner</title>
-    <style>
-        video {
-            width: 640px;
-            height: 360px;
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+    <style type="text/css">
+        .video-container {
+            max-width: 100%;
         }
     </style>
 </head>
@@ -27,12 +29,14 @@
         </div>
     </form>
     
-    <div>
-        <video id="videoPlayer" controls></video>
+    <div class="video-container">
+        <video id="videoPlayer" class="video-js vjs-default-skin" controls autoplay></video>
     </div>
 </body>
 
 <script src="http://cdn.dashjs.org/latest/dash.all.min.js"></script>
+<script src="https://vjs.zencdn.net/7.11.4/video.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-dash/4.1.0/videojs-dash.js"></script>
 <script src="index.js"></script>
 
 </html>
