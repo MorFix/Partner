@@ -35,7 +35,7 @@ const loadStream = ({dashUrl, drm}) => {
 
     addQuery(parsedDrm, { proxyhost: parsedDrm.origin, forceProxy: true });
 
-    const player = window.videojs('videoPlayer');
+    const player = window.videojs('videoPlayer', {fluid: true});
 
     player.ready(() => {
         player.dashUrl = dashUrl;
@@ -83,14 +83,7 @@ const fetchWithUser = (url, options = {}) => {
     Object.assign(options.headers, user);
 
     return fetchWithError(url, options)
-        .then(res => res.json())
-        .catch(err => {
-            alert(err.message);
-
-            console.log(err);
-
-            return Promise.reject(err);
-        });
+        .then(res => res.json());
 }; 
 
 const onPageLoaded = () => {
@@ -129,9 +122,10 @@ const login = async () => {
         const user = await res.json();
         
         setUser(user);
-        await fetchChannels();
 
         message.innerHTML = 'Logged in';
+        
+        await fetchChannels();
     } catch (err) {
         message.innerHTML = err.message;
 
@@ -139,12 +133,7 @@ const login = async () => {
     }
 };
 
-const fetchChannels = async () => {
-    const channels = await fetchWithUser('/api/channels');
-    const channelsContainer = document.getElementById('channels');
-
-    channelsContainer.innerHTML = '';
-
+const renderChannels = (channels, container) => {
     channels
         .map(channel => {
             const option = document.createElement('option');
@@ -156,18 +145,55 @@ const fetchChannels = async () => {
             return option;
         })
         .forEach(channelElem => {
-            channelsContainer.appendChild(channelElem);
+            container.appendChild(channelElem);
         });
 };
 
-const loadChannel = async id => {
-    const channel = await fetchWithUser(`/api/channels/${id}`);
+const fetchChannels = async () => {
+    const channelsContainer = document.getElementById('channels');
+    const channelMessage = document.getElementById('channelMessage');
 
-    loadStream(channel);
+    channelMessage.innerHTML = 'Loading channels...';
+
+    try {
+        const channels = await fetchWithUser('/api/channels');
+
+        channelMessage.innerHTML = '';
+        channelsContainer.innerHTML = '';
+
+        renderChannels(channels, channelsContainer);
+    } catch (err) {
+        channelMessage.innerHTML = err.message;
+
+        console.log(err);
+    }
+};
+
+const loadChannel = async ({id, name}) => {
+    const channelMessage = document.getElementById('channelMessage');
+
+    channelMessage.innerHTML = `Loading ${name}...`;
+
+    try {
+        const channel = await fetchWithUser(`/api/channels/${id}`);
+        
+        loadStream(channel);
+
+        channelMessage.innerHTML = '';
+    } catch (err) {
+        channelMessage.innerHTML = err.message;
+
+        console.log(err);
+    }
 };
 
 const channelsSelect = document.getElementById('channels');
-const setChannel = () => loadChannel(channelsSelect.value);
+const setChannel = () => {
+    const selectedOption = Array.from(channelsSelect).find(x => x.value === channelsSelect.value);
+    if (selectedOption) {
+        loadChannel(selectedOption.channel);
+    }
+};
 
 window.addEventListener('load', onPageLoaded);
 document.getElementById('loginForm').addEventListener('submit', login);
