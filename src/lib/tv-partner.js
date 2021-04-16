@@ -2,51 +2,55 @@ import soap from 'soap';
 import xml from 'xml';
 import axios from 'axios';
 
-const REDMI_DEVICE = {
-    DeviceName: 'Redmi Note 4',
-    DeviceNickName: 'Redmi-Mor',
-    DeviceOs: 'Android',
-    DeviceOperator: null,
-    DeviceSecureId: 'ac99c599b79069a0'
+import {login as accountLogin, getTvContractAuth, getTvContractData} from './my-partner.js';
+
+const getUserTvData = async (idNumber, lastDigits) => {
+    const userAuth = await accountLogin(idNumber, lastDigits);
+    const tvAuth = await getTvContractAuth(userAuth);
+
+    return await getTvContractData(userAuth, tvAuth);
 };
 
-const ONEPLUS_DEVICE = {
-    DeviceName: 'AC2003',
-    DeviceNickName: 'OnePlus Nord',
+const deviceToSoap = ({name, nickName, serial, type, secureId}) => ({
+    ClientMsisdn: null,
+    DeviceName: name,
+    DeviceNickName: nickName,
     DeviceOs: 'Android',
     DeviceOperator: null,
-    DeviceSecureId: 'bfa202aae61f7d68'
-};
+    DeviceSecureId: secureId,
+    DeviceSerial: serial,
+    DeviceType: type
+});
 
-export const login = async (email, password) => {
-    const ACTION_NAME = 'CheckSubsAuthAndCreateToken';
-    const soapUrl = 'https://plush.partner.co.il/TVInformation.svc?wsdl';
-
-    const loginSoapClient = await soap.createClientAsync(soapUrl);
-
-    const loginData = {
-        Password: password,
-        TokenType: 'HOURS24',
-        TvDevice: {
-            ClientMsisdn: null,
-            ...ONEPLUS_DEVICE,
-            DeviceSerial: null,
-            DeviceType: 'SMARTPHONE'
-        },
-        UserName: email,
-    };
-
-    const [loginResponse] = await loginSoapClient[`${ACTION_NAME}Async`]({ request: loginData });
-
-    const { Msisdn: userId, Token: token, responseStatus } = loginResponse[`${ACTION_NAME}Result`];
+const handleLoginResponse = result => {
+    const { Msisdn: userId, Token: token, responseStatus } = result;
     if (responseStatus.status === 'ERROR') {
-        const error = new Error('Login Error');
+        const error = new Error(responseStatus.statusMessage || 'Login error');
         error.additionalData = { userId, code: responseStatus.statusCode, message: responseStatus.statusMessage };
 
         throw error;
     }
 
     return { userId, token };
+}
+
+export const login = async (idNumber, lastDigits, password) => {
+    const ACTION_NAME = 'CheckSubsAuthAndCreateToken';
+    const soapUrl = 'https://plush.partner.co.il/TVInformation.svc?wsdl';
+
+    const [loginSoapClient, {userName, devices}] = await Promise.all([soap.createClientAsync(soapUrl),
+                                                                      getUserTvData(idNumber, lastDigits)]);
+
+    if (!devices[0]) {
+        throw new Error('Cannot find TV device. Please make sure you logged in to the app at least once');
+    }
+
+    // The props order matters!
+    const loginData = {Password: password, TokenType: 'HOURS24', TvDevice: deviceToSoap(devices[0]), UserName: userName};
+
+    const [loginResponse] = await loginSoapClient[`${ACTION_NAME}Async`]({ request: loginData });
+
+    return handleLoginResponse(loginResponse[`${ACTION_NAME}Result`]);
 };
 
 const generateTokenHeader = token => ({ Authorization: `SeacToken token="${token}"` });

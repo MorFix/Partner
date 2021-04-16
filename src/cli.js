@@ -30,7 +30,7 @@ const getChannelsViewData = channelsResponse => channelsResponse.reduce((all, {n
 
 const main = async () => {
 	try {
-		const user = await login(process.env.DEFAULT_USER, process.env.DEFAULT_PASSWORD);
+		const user = await login(process.env.DEFAULT_ID_NUMBER, process.env.DEFAULT_LAST_DIGITS, process.env.DEFAULT_PASSWORD);
         const channels = getChannelsViewData(await getChannels(user));
 		const {name, id} = askForChannel(channels);
 

@@ -1,3 +1,5 @@
+let currentPlayer;
+
 const addQuery = (url, payload) => {
     Object.keys(payload)
         .filter(key => !url.searchParams.has(key))
@@ -24,11 +26,13 @@ const modifyRequestURL = (url, dashUrl) => {
 };
 
 const loadStream = ({dashUrl, drm}) => {
+    currentPlayer?.reset();
+
     const parsedDrm = new URL(drm);
 
     addQuery(parsedDrm, { proxyhost: parsedDrm.origin, forceProxy: true });
     
-    const player = window.dashjs.MediaPlayer().create();
+    const player = currentPlayer = window.dashjs.MediaPlayer().create();
     const protection = {"com.widevine.alpha": {serverURL: getPathAndQuery(parsedDrm)}};
 
     player.setProtectionData(protection);
@@ -99,11 +103,14 @@ const setUser = ({userId, token}) => {
 };
 
 const login = async () => {
-    const email = document.getElementById('email').value;
+    const idNumber = document.getElementById('idNumber').value;
+    const lastDigits = document.getElementById('lastDigits').value;
     const password = document.getElementById('password').value;
+    
     const message = document.getElementById('loginMessage');
     
-    message.innerHTML = 'Loading...';
+    message.innerHTML = 'Logging in...';
+
     try {
         const res = await fetchWithError('/api/login', {
             method: 'POST',
@@ -111,7 +118,7 @@ const login = async () => {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({email, password})
+            body: JSON.stringify({idNumber, lastDigits, password})
         });
     
         const user = await res.json();
@@ -158,7 +165,7 @@ const channelsSelect = document.getElementById('channels');
 const setChannel = () => loadChannel(channelsSelect.value);
 
 window.addEventListener('load', onPageLoaded);
-document.getElementById('loginButton').addEventListener('click', login);
+document.getElementById('loginForm').addEventListener('submit', login);
 
 document.getElementById('loadChannelButton').addEventListener('click', setChannel);
 document.getElementById('channels').addEventListener('change', setChannel);
