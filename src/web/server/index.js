@@ -6,7 +6,7 @@ import asyncHandler from 'express-async-handler';
 import open from 'open';
 
 import dynamicProxy from './dynamic-proxy.js';
-import {login, getChannels, createSession} from '../../lib/tv-partner.js';
+import {login, getChannels, createSession, createSessionForce} from '../../lib/tv-partner.js';
 
 dotenv.config();
 
@@ -35,7 +35,11 @@ const loginHandler = async (req, res) => {
 };
 
 const channelsHandler = async ({user}, res) => res.json(await getChannels(user));
-const singleChannelHandler = async (req, res) => res.json(await createSession(req.params.id, req.user));
+const singleChannelHandler = async (req, res) => {
+    const sessionCreator = req.query.force === 'true' ? createSessionForce : createSession;
+
+    res.json(await sessionCreator(req.params.id, req.user));
+};
 
 app.post('/api/login', asyncHandler(loginHandler));
 app.get('/api/channels', handleUser, asyncHandler(channelsHandler));

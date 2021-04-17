@@ -5,6 +5,8 @@ window.videojs.Html5DashJS.hook('beforeinitialize', (videoJsPlayer, dashPlayer) 
     }));
 });
 
+const sessionsContainer = document.getElementById('sessions');
+
 const addQuery = (url, payload) => {
     Object.keys(payload)
         .filter(key => !url.searchParams.has(key))
@@ -133,7 +135,10 @@ const login = async () => {
     }
 };
 
-const renderChannels = (channels, container) => {
+const renderChannels = channels => {
+    const container = document.getElementById('channels');
+    container.innerHTML = '';
+
     channels
         .map(channel => {
             const option = document.createElement('option');
@@ -150,7 +155,6 @@ const renderChannels = (channels, container) => {
 };
 
 const fetchChannels = async () => {
-    const channelsContainer = document.getElementById('channels');
     const channelMessage = document.getElementById('channelMessage');
 
     channelMessage.innerHTML = 'Loading channels...';
@@ -159,13 +163,49 @@ const fetchChannels = async () => {
         const channels = await fetchWithUser('/api/channels');
 
         channelMessage.innerHTML = '';
-        channelsContainer.innerHTML = '';
 
-        renderChannels(channels, channelsContainer);
+        renderChannels(channels);
     } catch (err) {
         channelMessage.innerHTML = err.message;
 
         console.log(err);
+    }
+};
+
+const renderSessions = sessions => {
+    sessionsContainer.innerHTML = '';
+
+    sessions
+        .map((session, index) => {
+            const option = document.createElement('option');
+
+            option.setAttribute('value', session.dashUrl);
+            option.innerHTML = `Session #${index + 1}`;
+            option.session = session;
+
+            return option;
+        })
+        .forEach(channelElem => {
+            sessionsContainer.appendChild(channelElem);
+        });
+};
+
+const loadChannelForce = async (id, onSuccess, onError) => {    
+    try {
+        const channelSessions = await fetchWithUser(`/api/channels/${id}?force=true`);
+
+        if (channelSessions.length) {
+            sessionsContainer.style.display = 'inline-block';
+            
+            renderSessions(channelSessions);
+            loadStream(channelSessions[0]);
+        } else {
+            throw new Error('Brute force has failed :(');
+        }
+
+        onSuccess();
+    } catch (err) {
+        onError(err);
     }
 };
 
@@ -173,30 +213,54 @@ const loadChannel = async ({id, name}) => {
     const channelMessage = document.getElementById('channelMessage');
 
     channelMessage.innerHTML = `Loading ${name}...`;
-
-    try {
-        const channel = await fetchWithUser(`/api/channels/${id}`);
-        
-        loadStream(channel);
-
-        channelMessage.innerHTML = '';
-    } catch (err) {
+    
+    const onError = err => {
         channelMessage.innerHTML = err.message;
 
         console.log(err);
+    };
+
+    const onSuccess = () => {
+        channelMessage.innerHTML = '';
+    };
+
+    try {
+        const session = await fetchWithUser(`/api/channels/${id}`);
+        
+        loadStream(session);
+        onSuccess();
+    } catch (err) {
+        if (err.additionalData?.InternalError === 'ENotAuthorized' &&
+            confirm('You are not authorized to view this channel. Try brute force ?')) {
+            
+            await loadChannelForce(id, onSuccess, onError);
+        } else {
+            onError(err);
+        }
     }
 };
 
 const channelsSelect = document.getElementById('channels');
 const setChannel = () => {
+    sessionsContainer.style.display = '';
+
     const selectedOption = Array.from(channelsSelect).find(x => x.value === channelsSelect.value);
     if (selectedOption) {
         loadChannel(selectedOption.channel);
     }
 };
 
+const setSession = () => {
+    const selectedOption = Array.from(sessionsContainer).find(x => x.value === sessionsContainer.value);
+    if (selectedOption) {
+        loadStream(selectedOption.session);
+    }
+}
+
 window.addEventListener('load', onPageLoaded);
 document.getElementById('loginForm').addEventListener('submit', login);
 
 document.getElementById('loadChannelButton').addEventListener('click', setChannel);
 document.getElementById('channels').addEventListener('change', setChannel);
+
+sessionsContainer.addEventListener('change', setSession);
