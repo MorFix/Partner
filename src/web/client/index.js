@@ -102,7 +102,9 @@ const setUser = ({userId, token}) => {
     window.localStorage.setItem('token', token);
 };
 
-const login = async () => {
+const login = async e => {
+    e.preventDefault();
+
     const idNumber = document.getElementById('idNumber').value;
     const lastDigits = document.getElementById('lastDigits').value;
     const password = document.getElementById('password').value;
