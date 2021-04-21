@@ -1,7 +1,9 @@
 import { fileURLToPath } from 'url';
-import { resolve, dirname } from 'path';
+import { resolve, dirname, join } from 'path';
+import { readFileSync } from 'fs';
 import dotenv from 'dotenv';
 import express from 'express';
+import https from 'https';
 import asyncHandler from 'express-async-handler';
 import open from 'open';
 
@@ -53,6 +55,7 @@ app.use((error, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 80;
+const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 
 app.listen(PORT, () => {
     console.log(`Listening on ${PORT}...`);
@@ -64,3 +67,11 @@ app.listen(PORT, () => {
             });
     }
 });
+
+const key = readFileSync(join(__dirname, 'cert.key'));
+const cert = readFileSync(join(__dirname, 'cert.crt'));
+
+https.createServer({key, cert}, app)
+    .listen(HTTPS_PORT, () => {
+        console.log(`Listening on ${HTTPS_PORT}...`);
+    });
