@@ -4,6 +4,10 @@ import axios from 'axios';
 
 import {login as accountLogin, getTvContractAuth, getTvContractData} from './my-partner.js';
 
+const PUB_BASE_URL = 'https://pub.partner.co.il';
+const PLUSH_BASE_URL = 'https://plush.partner.co.il';
+const SNO_BASE_URL = 'https://sno.partner.co.il';
+
 const getUserTvData = async (idNumber, lastDigits) => {
     const userAuth = await accountLogin(idNumber, lastDigits);
     const tvAuth = await getTvContractAuth(userAuth);
@@ -36,7 +40,7 @@ const handleLoginResponse = result => {
 
 export const login = async (idNumber, lastDigits, password) => {
     const ACTION_NAME = 'CheckSubsAuthAndCreateToken';
-    const soapUrl = 'https://plush.partner.co.il/TVInformation.svc?wsdl';
+    const soapUrl = `${PLUSH_BASE_URL}/TVInformation.svc?wsdl`;
 
     const [loginSoapClient, {userName, devices}] = await Promise.all([soap.createClientAsync(soapUrl),
                                                                       getUserTvData(idNumber, lastDigits)]);
@@ -76,7 +80,7 @@ export const getChannels = async ({ userId, token }) => {
 
     const config = {
         method: 'POST',
-        url: 'https://pub.partner.co.il/traxis/web/Channels?Output=json',
+        url: `${PUB_BASE_URL}/traxis/web/Channels?Output=json`,
         data: queryData
     };
 
@@ -99,12 +103,12 @@ export const createSession = async (channelId, { userId, token }, isForTv = fals
 
     const config = {
         method: 'POST',
-        url: `https://pub.partner.co.il/traxis/web/Session/propset/all?CustomerId=${userId}&SeacToken=${token}&SeacClass=personal&Output=json`,
+        url: `${PUB_BASE_URL}/traxis/web/Session/propset/all?CustomerId=${userId}&SeacToken=${token}&SeacClass=personal&Output=json`,
         data: creationData,
         ...(isForTv ? {} : {headers: {'User-Agent': 'iFeelSmart-Android_MOBILE_AVC_L3'}})
     };
 
-    const drm = `https://sno.partner.co.il/WV/Proxy/DRM?AssetId=${channelId}&RequestType=1&DeviceUID=&RootStatus=false&DRMLevel=3&Roaming=false`;
+    const drm = `${SNO_BASE_URL}/WV/Proxy/DRM?AssetId=${channelId}&RequestType=1&DeviceUID=&RootStatus=false&DRMLevel=3&Roaming=false`;
 
     try {
         const {data} = await xmlRequest(token, config);

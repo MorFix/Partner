@@ -9,9 +9,9 @@
     <link href="style.css" rel="stylesheet" />
 </head>
 
-<body>
+<body class="spaced">
     <form action="#" id="loginForm">
-        <div>
+        <div class="spaced">
             <input type="number" id="idNumber" placeholder="תעודת זהות" required />
             <input type="number" id="lastDigits" placeholder="6 ספרות אמצעי תשלום" required />
             <input type="password" id="password" placeholder="סיסמא" required />
@@ -19,7 +19,7 @@
             <span id="loginMessage"></span>
         </div>
        
-        <div>
+        <div class="spaced">
             <select id="channels"></select>
             <select id="sessions"></select>
             <input type="button" id="loadChannelButton" value="Load channel" />
@@ -27,8 +27,8 @@
         </div>
     </form>
     
-    <div class="video-container">
-        <video width="480" height="360" id="videoPlayer" class="video-js vjs-default-skin" controls></video>
+    <div class="video-container spaced">
+        <video id="videoPlayer" class="video-js vjs-default-skin vjs-big-play-centered" controls></video>
     </div>
 </body>
 

@@ -37,7 +37,7 @@ const loadStream = ({dashUrl, drm}) => {
 
     addQuery(parsedDrm, { proxyhost: parsedDrm.origin, forceProxy: true });
 
-    const player = window.videojs('videoPlayer', {fluid: true});
+    const player = window.player;
 
     player.ready(() => {
         player.dashUrl = dashUrl;
@@ -88,6 +88,22 @@ const fetchWithUser = (url, options = {}) => {
         .then(res => res.json());
 }; 
 
+const createPlayer = () => {
+    const options = {
+        fluid: true,
+        liveui: true,
+        controlBar: {
+            volumePanel: {inline: false}
+        }
+    };
+
+    const player = window.videojs('videoPlayer', options);
+
+    player.liveTracker.options({trackingThreshold: 0});
+
+    return player;
+};
+
 const onPageLoaded = () => {
     const user = getUser();
     if (!user) {
@@ -95,6 +111,8 @@ const onPageLoaded = () => {
     }
 
     fetchChannels();
+
+    window.player = createPlayer();
 };
 
 const setUser = ({userId, token}) => {

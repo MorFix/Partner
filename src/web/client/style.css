@@ -13,3 +13,7 @@
     height: 100%;
     max-width: 100%;
 }
+
+.spaced {
+    padding: 8px;
+}
