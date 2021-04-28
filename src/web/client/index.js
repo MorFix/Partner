@@ -105,14 +105,13 @@ const createPlayer = () => {
 };
 
 const onPageLoaded = () => {
-    const user = getUser();
-    if (!user) {
+    window.player = createPlayer();
+    
+    if (!getUser()) {
         return;
     }
 
     fetchChannels();
-
-    window.player = createPlayer();
 };
 
 const setUser = ({userId, token}) => {

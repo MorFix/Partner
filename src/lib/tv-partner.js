@@ -2,7 +2,7 @@ import soap from 'soap';
 import xml from 'xml';
 import axios from 'axios';
 
-import {login as accountLogin, getTvContractAuth, getTvContractData} from './my-partner.js';
+import {login as accountLogin, getTvContractAuthKeys, getTvContractsData} from './my-partner.js';
 
 const PUB_BASE_URL = 'https://pub.partner.co.il';
 const PLUSH_BASE_URL = 'https://plush.partner.co.il';
@@ -10,9 +10,9 @@ const SNO_BASE_URL = 'https://sno.partner.co.il';
 
 const getUserTvData = async (idNumber, lastDigits) => {
     const userAuth = await accountLogin(idNumber, lastDigits);
-    const tvAuth = await getTvContractAuth(userAuth);
+    const tvAuthKeys = await getTvContractAuthKeys(userAuth);
 
-    return await getTvContractData(userAuth, tvAuth);
+    return await getTvContractsData(userAuth, tvAuthKeys);
 };
 
 const deviceToSoap = ({name, nickName, serial, type, secureId}) => ({
@@ -38,13 +38,9 @@ const handleLoginResponse = result => {
     return { userId, token };
 }
 
-export const login = async (idNumber, lastDigits, password) => {
+const loginToTvContract = async (loginSoapClient, {userName, devices}, password) => {
     const ACTION_NAME = 'CheckSubsAuthAndCreateToken';
-    const soapUrl = `${PLUSH_BASE_URL}/TVInformation.svc?wsdl`;
-
-    const [loginSoapClient, {userName, devices}] = await Promise.all([soap.createClientAsync(soapUrl),
-                                                                      getUserTvData(idNumber, lastDigits)]);
-
+    
     if (!devices[0]) {
         throw new Error('Cannot find TV device. Please make sure you logged in to the app at least once');
     }
@@ -55,6 +51,24 @@ export const login = async (idNumber, lastDigits, password) => {
     const [loginResponse] = await loginSoapClient[`${ACTION_NAME}Async`]({ request: loginData });
 
     return handleLoginResponse(loginResponse[`${ACTION_NAME}Result`]);
+};
+
+export const login = async (idNumber, lastDigits, password) => {
+    const soapUrl = `${PLUSH_BASE_URL}/TVInformation.svc?wsdl`;
+
+    const [loginSoapClient, tvContracts] = await Promise.all([soap.createClientAsync(soapUrl),
+                                                              getUserTvData(idNumber, lastDigits)]);
+
+    if (!tvContracts.length) {
+        throw new Error('Cannot find TV contract. Please make sure you are registered to the service');;
+    }
+
+    // Trying all tv accounts with the given password and waiting for the first successfull one
+    try {
+        return await Promise.any(tvContracts.map(x => loginToTvContract(loginSoapClient, x, password)));
+    } catch (aggregateError) {
+        throw aggregateError.errors[0];
+    }
 };
 
 const generateTokenHeader = token => ({ Authorization: `SeacToken token="${token}"` });
