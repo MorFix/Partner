@@ -8,7 +8,7 @@ import asyncHandler from 'express-async-handler';
 import open from 'open';
 
 import dynamicProxy from './dynamic-proxy.js';
-import {login, getChannels, createSession, createSessionForce} from '../../lib/tv-partner.js';
+import {login, getChannels, createSessions, createSessionsForce} from '../../lib/tv-partner.js';
 
 dotenv.config();
 
@@ -38,9 +38,9 @@ const loginHandler = async (req, res) => {
 
 const channelsHandler = async ({user}, res) => res.json(await getChannels(user));
 const singleChannelHandler = async (req, res) => {
-    const sessionCreator = req.query.force === 'true' ? createSessionForce : createSession;
+    const sessionsCreator = req.query.force === 'true' ? createSessionsForce : createSessions;
 
-    res.json(await sessionCreator(req.params.id, req.user));
+    res.json(await sessionsCreator(req.params.id, req.user));
 };
 
 app.post('/api/login', asyncHandler(loginHandler));
@@ -63,7 +63,7 @@ app.listen(PORT, () => {
     if (!process.argv.includes('--dev')) {
         open(`http://localhost:${PORT}/`)
             .catch(() => {
-                // Not important
+                // Doesn't matter
             });
     }
 });

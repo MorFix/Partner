@@ -7,6 +7,10 @@ window.videojs.Html5DashJS.hook('beforeinitialize', (videoJsPlayer, dashPlayer) 
 
 const sessionsContainer = document.getElementById('sessions');
 
+// These channels have supporting codec version just to tell you they won't work on your device,
+// and they have non-supported codecs in the (partially) working version.
+const skipBestStreamCheckChannels = ['1461', '1464', '1467', '1470'];
+
 const addQuery = (url, payload) => {
     Object.keys(payload)
         .filter(key => !url.searchParams.has(key))
@@ -191,16 +195,20 @@ const fetchChannels = async () => {
     }
 };
 
-const renderSessions = sessions => {
+const renderSessions = (sessions, selected) => {
     sessionsContainer.innerHTML = '';
 
     sessions
-        .map((session, index) => {
+        .map(session => {
             const option = document.createElement('option');
 
             option.setAttribute('value', session.dashUrl);
-            option.innerHTML = `Session #${index + 1}`;
+            option.innerHTML = session.name;
             option.session = session;
+
+            if (session === selected) {
+                option.setAttribute('selected', 'selected');
+            }
 
             return option;
         })
@@ -209,54 +217,47 @@ const renderSessions = sessions => {
         });
 };
 
-const loadChannelForce = async (id, onSuccess, onError) => {    
-    try {
-        const channelSessions = await fetchWithUser(`/api/channels/${id}?force=true`);
+const loadChannelForce = async id => {    
+    const sessions = await fetchWithUser(`/api/channels/${id}?force=true`);
 
-        if (channelSessions.length) {
-            sessionsContainer.style.display = 'inline-block';
-            
-            renderSessions(channelSessions);
-            loadStream(channelSessions[0]);
-        } else {
-            throw new Error('Brute force has failed :(');
-        }
-
-        onSuccess();
-    } catch (err) {
-        onError(err);
+    if (!sessions.length) {
+        throw new Error('Brute force has failed :(');
     }
+
+    return sessions;
 };
 
 const loadChannel = async ({id, name}) => {
     const channelMessage = document.getElementById('channelMessage');
 
     channelMessage.innerHTML = `Loading ${name}...`;
+
+    const onSuccess = sessions => (skipBestStreamCheckChannels.includes(id) ? Promise.resolve(sessions[0]) : window.getBestStream(sessions))
+        .then(session => {
+            channelMessage.innerHTML = '';
+            sessionsContainer.style.display = 'inline-block';
+
+            renderSessions(sessions, session)
+            loadStream(session);
+        });
+
+    return fetchWithUser(`/api/channels/${id}`)
+        .then(onSuccess)
+        .catch(err => {
+            if (err.additionalData?.InternalError === 'ENotAuthorized' &&
+                confirm('You are not authorized to view this channel. Try brute force ?')) {
+                
+                return loadChannelForce(id)
+                    .then(onSuccess);
+            }
+
+            return Promise.reject(err);
+        })
+        .catch(err => {
+            channelMessage.innerHTML = err.message;
     
-    const onError = err => {
-        channelMessage.innerHTML = err.message;
-
-        console.log(err);
-    };
-
-    const onSuccess = () => {
-        channelMessage.innerHTML = '';
-    };
-
-    try {
-        const session = await fetchWithUser(`/api/channels/${id}`);
-        
-        loadStream(session);
-        onSuccess();
-    } catch (err) {
-        if (err.additionalData?.InternalError === 'ENotAuthorized' &&
-            confirm('You are not authorized to view this channel. Try brute force ?')) {
-            
-            await loadChannelForce(id, onSuccess, onError);
-        } else {
-            onError(err);
-        }
-    }
+            console.log(err);
+        });
 };
 
 const channelsSelect = document.getElementById('channels');
