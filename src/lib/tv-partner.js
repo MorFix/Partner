@@ -41,7 +41,7 @@ const handleLoginResponse = result => {
     }
 
     return { userId, token };
-}
+};
 
 const loginToTvContract = async (loginSoapClient, {userName, devices}, password) => {
     const ACTION_NAME = 'CheckSubsAuthAndCreateToken';
@@ -71,8 +71,8 @@ export const login = async (idNumber, lastDigits, password) => {
     // Trying all tv accounts with the given password and waiting for the first successfull one
     try {
         return await promiseAny(tvContracts.map(x => loginToTvContract(loginSoapClient, x, password)));
-    } catch (aggregateError) {
-        throw aggregateError.errors[0];
+    } catch ([error]) {
+        throw error;
     }
 };
 
@@ -171,7 +171,7 @@ export const createSessionsForce = async (channelId, {userId: strUserId, token})
     const promises = [];
 
     for (let i = userId - TRIES_EACH_DIRECTION; i <= userId + TRIES_EACH_DIRECTION; i++) {
-        const pt = promiseThrottle.add(() => createSessions(channelId, { userId: i, token })
+        const pt = promiseThrottle.add(() => createSessions(channelId, { userId: i.toString(), token })
             .then(sessions => {
                 console.log(sessions);
 
