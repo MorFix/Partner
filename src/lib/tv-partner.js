@@ -4,7 +4,6 @@ import axios from 'axios';
 import Promise from 'bluebird';
 
 import {login as accountLogin, getTvContractAuthKeys, getTvContractsData} from './my-partner.js';
-import PromiseThrottle from 'promise-throttle';
 
 const BASE_URL = 'partner.co.il';
 
@@ -32,15 +31,15 @@ const deviceToSoap = ({name, nickName, serial, type, secureId}) => ({
 });
 
 const handleLoginResponse = result => {
-    const { Msisdn: userId, Token: token, responseStatus } = result;
+    const {Msisdn: userId, Token: token, responseStatus} = result;
     if (responseStatus.status === 'ERROR') {
         const error = new Error(responseStatus.statusMessage || 'Login error');
-        error.additionalData = { userId, code: responseStatus.statusCode, message: responseStatus.statusMessage };
+        error.additionalData = {userId, code: responseStatus.statusCode, message: responseStatus.statusMessage};
 
         throw error;
     }
 
-    return { userId, token };
+    return {userId, token};
 };
 
 const loginToTvContract = async (loginSoapClient, {userName, devices}, password) => {
@@ -51,9 +50,14 @@ const loginToTvContract = async (loginSoapClient, {userName, devices}, password)
     }
 
     // The props order matters!
-    const loginData = {Password: password, TokenType: 'HOURS24', TvDevice: deviceToSoap(devices[0]), UserName: userName};
+    const loginData = {
+        Password: password,
+        TokenType: 'HOURS24',
+        TvDevice: deviceToSoap(devices[0]),
+        UserName: userName
+    };
 
-    const [loginResponse] = await loginSoapClient[`${ACTION_NAME}Async`]({ request: loginData });
+    const [loginResponse] = await loginSoapClient[`${ACTION_NAME}Async`]({request: loginData});
 
     return handleLoginResponse(loginResponse[`${ACTION_NAME}Result`]);
 };
@@ -62,10 +66,11 @@ export const login = async (idNumber, lastDigits, password) => {
     const soapUrl = `${PLUSH_BASE_URL}/TVInformation.svc?wsdl`;
 
     const [loginSoapClient, tvContracts] = await Promise.all([soap.createClientAsync(soapUrl),
-                                                              getUserTvData(idNumber, lastDigits)]);
+        getUserTvData(idNumber, lastDigits)]);
 
     if (!tvContracts.length) {
-        throw new Error('Cannot find TV contract. Please make sure you are registered to the service');;
+        throw new Error('Cannot find TV contract. Please make sure you are registered to the service');
+        ;
     }
 
     // Trying all tv accounts with the given password and waiting for the first successfull one
@@ -76,11 +81,11 @@ export const login = async (idNumber, lastDigits, password) => {
     }
 };
 
-const generateTokenHeader = token => ({ Authorization: `SeacToken token="${token}"` });
+const generateTokenHeader = token => ({Authorization: `SeacToken token="${token}"`});
 
 const xmlRequest = (token, config) => axios.request({
     ...config,
-    headers: { ...generateTokenHeader(token), 'Content-Type': 'text/xml', ...(config.headers || {}) },
+    headers: {...generateTokenHeader(token), 'Content-Type': 'text/xml', ...(config.headers || {})},
     data: xml(config.data)
 });
 
@@ -96,39 +101,39 @@ const queryTraxis = (path, requestConfig, token) => {
     return xmlRequest(token, config);
 };
 
-export const getChannels = async ({ userId, token }) => {
+export const getChannels = async ({userId, token}) => {
     const queryData = {
         Request: [
-            { Identity: [{ CustomerId: userId }] },
+            {Identity: [{CustomerId: userId}]},
             {
                 RootRelationQuery: [
-                    { _attr: { relationName: 'Channels' } },
-                    { Options: [{ Option: [{ _attr: { type: 'Props' } }, 'name,pictures'] }] }
+                    {_attr: {relationName: 'Channels'}},
+                    {Options: [{Option: [{_attr: {type: 'Props'}}, 'name,pictures']}]}
                 ]
             }
         ]
     };
 
-    const { data: { Channels: { Channel = [] } = {} } = {} } = await queryTraxis('/Channels', {data: queryData}, token);
+    const {data: {Channels: {Channel = []} = {}} = {}} = await queryTraxis('/Channels', {data: queryData}, token);
 
     return Channel.map(x => {
         const logoPicture = x.Pictures.Picture.find(y => y.type === 'Logo');
         const logo = logoPicture && logoPicture.Value || null;
 
-        return { id: x.id, name: x.Name, logo };
+        return {id: x.id, name: x.Name, logo};
     });
 };
 
 
-export const searchPrograms = async ({ userId, token }) => {
+export const searchPrograms = async ({userId, token}) => {
     // TODO: implememnt according to this:
     // /epg/programs?device=62&locale=en_US&in_channel=61194865&page=1&limit=400&gt_begin=2021-05-06T21%3A00%3A00&lt_begin=2021-05-07T20%3A59%3A59
 };
 
-const createSession = async (channelId, { userId, token }, isForTv = false) => {
+const createSession = async (channelId, {userId, token}, isForTv = false) => {
     const creationData = {
         CreateSession: [
-            { ChannelId: channelId }
+            {ChannelId: channelId}
         ]
     };
 
@@ -141,7 +146,8 @@ const createSession = async (channelId, { userId, token }, isForTv = false) => {
     };
 
     try {
-        const {data} = await queryTraxis('/Session/propset/all', config, token);;
+        const {data} = await queryTraxis('/Session/propset/all', config, token);
+        ;
 
         return {dashUrl: data.Session.Playlist.Channel.Value, name: `${isForTv ? 'TV' : 'Mobile'}_${userId}`, drm};
     } catch (err) {
@@ -163,24 +169,17 @@ export const createSessions = (...params) => {
 export const createSessionsForce = (channelId, {userId: strUserId, token}) => {
     const NUMBER_OF_TRIES = parseInt(process.env.BRUTE_FORCE_TRIES) ?? 50;
     const TRIES_EACH_DIRECTION = NUMBER_OF_TRIES / 2;
-    const WAIT = parseInt(process.env.BRUTE_FORCE_WAIT_MS) ?? 250;
     const userId = parseInt(strUserId);
-
-    const promiseThrottle = new PromiseThrottle({
-        requestsPerSecond: WAIT === 0 ? Number.MAX_SAFE_INTEGER : 1000 / WAIT
-    });
 
     const promises = [];
 
     for (let i = userId - TRIES_EACH_DIRECTION; i <= userId + TRIES_EACH_DIRECTION; i++) {
-        const pt = promiseThrottle.add(() => createSessions(channelId, { userId: i.toString(), token })
+        promises.push(createSessions(channelId, {userId: i.toString(), token})
             .then(sessions => {
                 console.log(sessions);
 
                 return sessions;
             }));
-
-        promises.push(pt);
     }
 
     return Promise.any(promises).catch(() => []);
