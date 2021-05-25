@@ -42,18 +42,18 @@ const getPartnerResponse = async request => {
 
 export const login = async (idNumber, lastDigits) => {
     const request = createPartnerRequestConfig({url: '/LoginAPI/AuthConsumer/LoginByPayments', data: {idNumber, lastDigits}});
-    
+
     const {authKey} = await getPartnerResponse(request);
-    
+
     return authKey.authKey;
 };
 
-export const getTvContractAuthKeys = async authKey => {
+const getTvContractAuthKeys = async authKey => {
     const data = {keyType: 2, contractTypeList: [CONTRACT_TYPES.TV], getSuspendedContracts: true};
     const request = createPartnerRequestConfig({url: '/LoginAPI/Consumer/GetConsumer', data}, authKey);
 
     const {customers} = await getPartnerResponse(request);
-    
+
     if (!customers.length) {
         throw new Error('Cannot find TV contract. Please make sure you are registered to the service');
     }
@@ -66,9 +66,13 @@ const getTvSingleContract = async (userAuth, tvContractAuth) => {
     const request = createPartnerRequestConfig({url: '/PersonalAreaAPI/api/Tv/GetTvContractData', data}, userAuth);
 
     const {data: {userName, devices}} = await axios.request(request);
-    
+
     return {userName, devices};
 };
 
-export const getTvContractsData = (userAuth, tvContractKeys) =>
-    Promise.all(tvContractKeys.map(tvKey => getTvSingleContract(userAuth, tvKey)));
+export const getTvContractsData = async userAuth => {
+    const tvAuthKeys = await getTvContractAuthKeys(userAuth);
+
+    return await Promise.all(tvAuthKeys.map(tvKey => getTvSingleContract(userAuth, tvKey)));
+}
+

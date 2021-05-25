@@ -3,7 +3,7 @@ import xml from 'xml';
 import axios from 'axios';
 import Promise from 'bluebird';
 
-import {login as accountLogin, getTvContractAuthKeys, getTvContractsData} from './my-partner.js';
+import {login as accountLogin, getTvContractsData} from './my-partner.js';
 
 const BASE_URL = 'partner.co.il';
 
@@ -14,9 +14,8 @@ const SNO_BASE_URL = `https://sno.${BASE_URL}`;
 
 const getUserTvData = async (idNumber, lastDigits) => {
     const userAuth = await accountLogin(idNumber, lastDigits);
-    const tvAuthKeys = await getTvContractAuthKeys(userAuth);
 
-    return await getTvContractsData(userAuth, tvAuthKeys);
+    return await getTvContractsData(userAuth);
 };
 
 const deviceToSoap = ({name, nickName, serial, type, secureId}) => ({
@@ -70,7 +69,6 @@ export const login = async (idNumber, lastDigits, password) => {
 
     if (!tvContracts.length) {
         throw new Error('Cannot find TV contract. Please make sure you are registered to the service');
-        ;
     }
 
     // Trying all tv accounts with the given password and waiting for the first successfull one
