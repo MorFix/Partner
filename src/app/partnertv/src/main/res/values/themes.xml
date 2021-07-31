@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.PartnerTV" parent="@style/Theme.Leanback" />
+</resources>
