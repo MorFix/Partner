@@ -71,7 +71,13 @@ class TvPartner {
             "SeacClass" to "personal"
         )
 
-        val responseBody = queryTraxis("/Session/propset/all", query, userData.token, creationData)
+        val headers = if (channelId == 1250L) {
+            mapOf("User-Agent" to "iFeelSmart-Android_MOBILE_AVC_L3")
+        } else {
+            mapOf()
+        }
+
+        val responseBody = queryTraxis("/Session/propset/all", query, userData.token, creationData, headers)
         val dashUrl = responseBody.getAsJsonObject("Session")
             .getAsJsonObject("Playlist")
             .getAsJsonObject("Channel")["Value"].asString
@@ -106,13 +112,13 @@ class TvPartner {
         return sessionsFlow.dropWhile { it == null }.firstOrNull()
     }
 
-    private suspend fun queryTraxis(path: String, query: MutableMap<String, String> = mutableMapOf(), token: String, data: Node) : JsonObject {
+    private suspend fun queryTraxis(path: String, query: MutableMap<String, String> = mutableMapOf(), token: String, data: Node, headers: Map<String, String> = mapOf()) : JsonObject {
         query["Output"] = "json"
 
-        return xmlRequest( "$PUB_BASE_URL/traxis/web$path", query, token, data);
+        return xmlRequest( "$PUB_BASE_URL/traxis/web$path", query, token, data, headers);
     }
 
-    private suspend fun xmlRequest(url: String, query: Map<String, String>, token: String, data: Node) : JsonObject {
+    private suspend fun xmlRequest(url: String, query: Map<String, String>, token: String, data: Node, headers: Map<String, String>) : JsonObject {
         val client = HttpClient {
             expectSuccess = false
         }
@@ -121,6 +127,9 @@ class TvPartner {
         val response: HttpResponse = client.post(url) {
             headers {
                 append("Authorization", "SeacToken token=\"$token\"")
+                headers.forEach {
+                    append(it.key, it.value)
+                }
             }
 
             query.forEach {

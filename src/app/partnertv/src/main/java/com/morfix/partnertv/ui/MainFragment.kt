@@ -106,7 +106,7 @@ class MainFragment : BrowseSupportFragment() {
         val rowsAdapter = ArrayObjectAdapter(ListRowPresenter())
         val cardPresenter = CardPresenter()
 
-        val perRow = 15
+        val perRow = 20
         val rows = ceil(list.count() / perRow.toDouble()).toInt()
 
         for (i in 0 until rows) {
