@@ -1,11 +1,11 @@
 package com.morfix.partnertv.ui
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.leanback.app.VideoSupportFragment
 import androidx.leanback.app.VideoSupportFragmentGlueHost
 import androidx.leanback.media.PlaybackTransportControlGlue
 import androidx.leanback.widget.PlaybackControlsRow
-import androidx.lifecycle.lifecycleScope
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -13,6 +13,7 @@ import com.google.android.exoplayer2.ext.leanback.LeanbackPlayerAdapter
 import com.google.android.exoplayer2.util.MimeTypes
 import com.morfix.partnertv.lib.TvPartner
 import com.morfix.partnertv.lib.data.UserData
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -25,8 +26,10 @@ class PlaybackVideoFragment : VideoSupportFragment() {
 
     }
 
+    @ExperimentalCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val (id, title, description, _, _) =
             activity?.intent?.getSerializableExtra("Movie") as PartnerMedia
