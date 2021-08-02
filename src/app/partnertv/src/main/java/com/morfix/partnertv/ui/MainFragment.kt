@@ -1,6 +1,5 @@
 package com.morfix.partnertv.ui
 
-import java.util.Collections
 import java.util.Timer
 import java.util.TimerTask
 
@@ -26,14 +25,20 @@ import androidx.core.content.ContextCompat
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.morfix.partnertv.R
+import com.morfix.partnertv.lib.TvPartner
+import com.morfix.partnertv.lib.data.UserData
+import kotlinx.coroutines.launch
+import kotlin.math.ceil
 
 /**
  * Loads a grid of cards with movies to browse.
@@ -47,16 +52,18 @@ class MainFragment : BrowseSupportFragment() {
     private var mBackgroundTimer: Timer? = null
     private var mBackgroundUri: String? = null
 
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         Log.i(TAG, "onCreate")
-        super.onActivityCreated(savedInstanceState)
+
+        super.onViewCreated(view, savedInstanceState)
 
         prepareBackgroundManager()
 
         setupUIElements()
 
-        loadRows()
+        viewLifecycleOwner.lifecycleScope.launch {
+            loadRows()
+        }
 
         setupEventListeners()
     }
@@ -88,25 +95,38 @@ class MainFragment : BrowseSupportFragment() {
         searchAffordanceColor = ContextCompat.getColor(requireContext(), R.color.search_opaque)
     }
 
-    private fun loadRows() {
-        val list = MovieList.list
+    private suspend fun loadRows() {
+        val list = try {
+            TvPartner().getChannels(UserData())
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), e.message, Toast.LENGTH_LONG).show()
+            arrayListOf()
+        }
 
         val rowsAdapter = ArrayObjectAdapter(ListRowPresenter())
         val cardPresenter = CardPresenter()
 
-        for (i in 0 until NUM_ROWS) {
-            if (i != 0) {
-                Collections.shuffle(list)
-            }
+        val perRow = 15
+        val rows = ceil(list.count() / perRow.toDouble()).toInt()
+
+        for (i in 0 until rows) {
+            val header = HeaderItem(i.toLong(), getString(R.string.browse_title) + " ${i+1}")
             val listRowAdapter = ArrayObjectAdapter(cardPresenter)
-            for (j in 0 until NUM_COLS) {
-                listRowAdapter.add(list[j % 5])
+
+            for (j in 0 until perRow) {
+                val index = i * perRow + j;
+                if (index >= list.count()) {
+                    break;
+                }
+
+                val currentMedia = list[index]
+                listRowAdapter.add(PartnerMedia(currentMedia.id.toLong(), currentMedia.name, currentMedia.name, currentMedia.logo, currentMedia.logo))
             }
-            val header = HeaderItem(i.toLong(), MovieList.MOVIE_CATEGORY[i])
+
             rowsAdapter.add(ListRow(header, listRowAdapter))
         }
 
-        val gridHeader = HeaderItem(NUM_ROWS.toLong(), "PREFERENCES")
+        val gridHeader = HeaderItem(rows.toLong(), "PREFERENCES")
 
         val mGridPresenter = GridItemPresenter()
         val gridRowAdapter = ArrayObjectAdapter(mGridPresenter)

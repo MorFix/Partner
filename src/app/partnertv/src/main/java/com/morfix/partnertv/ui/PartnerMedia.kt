@@ -16,7 +16,7 @@ data class PartnerMedia(
 ) : Serializable {
 
     override fun toString(): String {
-        return "Movie{" +
+        return "PartnerMedia {" +
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", videoUrl='" + videoUrl + '\'' +

@@ -7,7 +7,7 @@ import {login as accountLogin, getTvContractsData} from './my-partner.js';
 
 const BASE_URL = 'partner.co.il';
 
-const PUB_BASE_URL = `http://pub.${BASE_URL}`;
+const PUB_BASE_URL = `https://pub.${BASE_URL}`;
 const PLUSH_BASE_URL = `https://plush.${BASE_URL}`;
 const IFSHY_BASE_URL = `https://ifshy.${BASE_URL}`;
 const SNO_BASE_URL = `https://sno.${BASE_URL}`;

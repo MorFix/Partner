@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="8c11b9d1-4256-448b-a99f-f13010dbef4b" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/app/.idea/deploymentTargetDropDown.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/lib/MyPartner.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/lib/TvPartner.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/lib/data/ChannelData.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/lib/data/PlaybackSession.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/lib/data/UserData.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/lib/my-partner.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/lib/tv-partner.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/.idea/jarRepositories.xml" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/.idea/jarRepositories.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/.idea/runConfigurations.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/partnertv/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/partnertv/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/ui/MainFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/ui/MainFragment.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/partnertv/src/main/java/com/morfix/partnertv/ui/MovieList.kt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/tv-partner.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/tv-partner.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1w88TTTVuF2yMHGfLU2OaDa6HDK" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="vue.rearranger.settings.migration" value="true" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8c11b9d1-4256-448b-a99f-f13010dbef4b" name="Default Changelist" comment="" />
+      <created>1627828863163</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1627828863163</updated>
+      <workItem from="1627828864818" duration="298000" />
+      <workItem from="1627864097760" duration="17000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
